@@ -123,10 +123,10 @@ openclaw config set session.dmScope per-account-channel-peer
 默认每条入站消息都单独回复一次。如需合并用户连续发送的消息，设置图片合并窗口（毫秒）：
 
 ```bash
-openclaw config set messages.inbound.byChannel.openclaw-weixin 1500
+openclaw config set messages.inbound.byChannel.openclaw-weixin 3000
 ```
 
-未设置时回退到 `messages.inbound.debounceMs`；为 `0` 或未配置时保持逐条回复。修改后需重启 Gateway。启用后按发送人处理：
+窗口太短可能把一次发送的多张图片拆成两轮，太长只会让只发图片时的回复晚开始几秒，建议宁长勿短；3 秒左右可以容纳移动网络下较慢的上传。未设置时回退到 `messages.inbound.debounceMs`；为 `0` 或未配置时保持逐条回复。修改后需重启 Gateway。启用后按发送人处理：
 
 - 空闲时，文字、文件、视频、语音和引用回复立即处理。
 - 图片在窗口内没有新图片到达后才处理，一次发送的多张图片合并为一轮；窗口内到达的其他消息并入这一批并立即发出。
