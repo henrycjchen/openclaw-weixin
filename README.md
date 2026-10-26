@@ -120,6 +120,21 @@ authentication or routing. All registered agents on this plugin instance
 currently share the same `botAgent` declaration; per-agent overrides may be
 added in a future version if needed.
 
+### Inbound message batching
+
+By default every inbound message gets its own reply. To merge messages that a user sends in quick succession, set an image batching window (milliseconds):
+
+```bash
+openclaw config set messages.inbound.byChannel.openclaw-weixin 1500
+```
+
+`messages.inbound.debounceMs` is used as a fallback; `0` or unset keeps the default one-reply-per-message behavior. Restart the Gateway after changing it. When enabled, per sender:
+
+- While idle, text, files, video, voice, and quoted replies are processed immediately.
+- Images wait until no new image arrives within the window, so a multi-image send becomes a single turn. Any other message arriving inside the window joins the batch and flushes it.
+- Everything that arrives while a reply is still running is merged into one follow-up turn: texts are joined, all attachments are downloaded, and quoted replies are rendered inline as text.
+- Slash commands always run as their own turn, in arrival order.
+
 ## Local quote cache
 
 Newer WeChat clients may send only a server message ID for a quoted message. The plugin
