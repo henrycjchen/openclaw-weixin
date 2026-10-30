@@ -200,6 +200,36 @@ describe("createInboundBatcher", () => {
     expect(processed.map((p) => p.msg).slice(3)).toEqual(["T(c)"]);
   });
 
+  it.each([
+    ["text then image", [text("what is this?"), image("1")]],
+    ["image then text", [image("1"), text("what is this?")]],
+  ])("folds %s received during a running turn into one follow-up", async (_, msgs) => {
+    const batcher = createInboundBatcher({ imageWindowMs: 1500, process });
+    batcher.push(text("a"));
+    for (const msg of msgs) batcher.push(msg);
+
+    await finishTurn();
+    expect(processed.map((p) => p.msg)).toEqual(["T(a)", "T(what is this?) I(1)"]);
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(processed).toHaveLength(2);
+  });
+
+  it("does not move images ahead of a command queued before them", async () => {
+    const batcher = createInboundBatcher({ imageWindowMs: 1500, process });
+    batcher.push(text("a"));
+    batcher.push(text("b"));
+    batcher.push(text("/new"));
+    batcher.push(image("1"));
+
+    await finishTurn();
+    expect(processed.map((p) => p.msg)).toEqual(["T(a)", "T(b)"]);
+    await finishTurn();
+    expect(processed.map((p) => p.msg).slice(2)).toEqual(["T(/new)"]);
+    await finishTurn();
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(processed.map((p) => p.msg).slice(3)).toEqual(["I(1)"]);
+  });
+
   it("keeps senders independent", async () => {
     const batcher = createInboundBatcher({ imageWindowMs: 1500, process });
     batcher.push(text("a"));

@@ -151,6 +151,13 @@ export function createInboundBatcher(opts: InboundBatcherOpts) {
       while (s.queue[0] && "batch" in s.queue[0]) {
         msgs.push(...(s.queue.shift() as { batch: WeixinMessage[] }).batch);
       }
+      // Images still inside their window arrived during the previous turn, after this
+      // batch; fold them in unless a queued command sits between them.
+      if (s.open && s.queue.length === 0) {
+        clearTimeout(s.timer);
+        msgs.push(...s.open);
+        s.open = null;
+      }
       msg = merge(msgs);
     } else {
       msg = unit.single;
